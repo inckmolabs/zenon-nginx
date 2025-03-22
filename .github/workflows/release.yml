@@ -34,3 +34,4 @@ jobs:
           else
             echo "✅ Using provided version: $VERSION_INPUT"
             echo "nginx_version=$VERSION_INPUT" >> "$GITHUB_OUTPUT"
+          fi
