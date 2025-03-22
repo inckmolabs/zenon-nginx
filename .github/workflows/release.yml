@@ -1,0 +1,18 @@
+name: Trigger NGINX Build
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  trigger-build:
+    name: Trigger NGINX Build in ci-bot
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger NGINX Build
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }} # Create this secret
+          repository: inckmolabs/ci-bot
+          event-type: nginx-release
