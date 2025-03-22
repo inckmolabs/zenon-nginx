@@ -24,30 +24,13 @@ jobs:
       - name: Determine NGINX Version to Build
         id: version
         run: |
-          if [ -z "${{ github.event.inputs.nginx_version }}" ]; then
-            echo "📡 Fetching latest NGINX release from GitHub..."
+          set -e 
+          VERSION_INPUT="${{ github.event.inputs.nginx_version }}"
+          if [ -z "$VERSION_INPUT" ]; then
+            echo "📡 No version specified. Fetching latest NGINX release from GitHub..."
             latest=$(curl -s https://api.github.com/repos/nginx/nginx/releases/latest | jq -r '.tag_name')
             echo "✅ Using latest version: $latest"
             echo "nginx_version=$latest" >> "$GITHUB_OUTPUT"
           else
-            echo "✅ Using provided version: ${{ github.event.inputs.nginx_version }}"
-            echo "nginx_version=${{ github.event.inputs.nginx_version }}" >> "$GITHUB_OUTPUT"
-
-      - name: Debug Print - Final Version
-        run: |
-          echo "🚀 Version that will be sent to build: ${{ steps.version.outputs.nginx_version }}"
-
-      - name: Trigger NGINX Build in ci-bot
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
-          repository: inckmolabs/ci-bot
-          event-type: nginx-release
-          client-payload: |
-            {
-              "nginx_version": "${{ steps.version.outputs.nginx_version }}"
-            }
-
-      - name: Cleanup Summary
-        run: |
-          echo "🧹 Trigger completed. Version sent: ${{ steps.version.outputs.nginx_version }}"
+            echo "✅ Using provided version: $VERSION_INPUT"
+            echo "nginx_version=$VERSION_INPUT" >> "$GITHUB_OUTPUT"
