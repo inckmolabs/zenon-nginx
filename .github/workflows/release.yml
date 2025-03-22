@@ -49,4 +49,5 @@ jobs:
             }
 
       - name: Cleanup Summary
-        run: echo "🧹 Trigger completed. Version sent: ${{ steps.version.outputs.nginx_version }}"
+        run: |
+          echo "🧹 Trigger completed. Version sent: ${{ steps.version.outputs.nginx_version }}"
