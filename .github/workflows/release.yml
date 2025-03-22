@@ -3,35 +3,51 @@ name: Trigger NGINX Build
 on:
   release:
     types: [published]
-
   workflow_dispatch:
     inputs:
       nginx_version:
-        description: "Optional: Specify NGINX version to build (leave blank for latest)"
+        description: "Optional: NGINX version to build (leave empty to use latest)"
         required: false
-        default: ""
 
 jobs:
   trigger-build:
-    name: Trigger NGINX Build in ci-bot
+    name: 🚀 Trigger NGINX Build in ci-bot
     runs-on: ubuntu-latest
 
     steps:
-      - name: Debug Print - Input Version
+      - name: 📥 Determine NGINX Version
+        id: get-version
         run: |
-          echo "📥 Provided version: '${{ github.event.inputs.nginx_version }}'"
-
-      - name: Determine NGINX Version to Build
-        id: version
-        run: |
-          set -e 
           VERSION_INPUT="${{ github.event.inputs.nginx_version }}"
           if [ -z "$VERSION_INPUT" ]; then
-            echo "📡 No version specified. Fetching latest NGINX release from GitHub..."
+            echo "📡 No version specified. Fetching latest NGINX release..."
             latest=$(curl -s https://api.github.com/repos/nginx/nginx/releases/latest | jq -r '.tag_name')
             echo "✅ Using latest version: $latest"
-            echo "nginx_version=$latest" >> "$GITHUB_OUTPUT"
+            echo "nginx_version=$latest" >> "$GITHUB_ENV"
           else
             echo "✅ Using provided version: $VERSION_INPUT"
-            echo "nginx_version=$VERSION_INPUT" >> "$GITHUB_OUTPUT"
-          fi
+            echo "nginx_version=$VERSION_INPUT" >> "$GITHUB_ENV"
+
+      - name: 🪟 Windows NGINX Build Trigger - ${{ env.nginx_version }}
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          repository: inckmolabs/ci-bot
+          event-type: nginx-release
+          client-payload: |
+            {
+              "target_os": "windows",
+              "nginx_version": "${{ env.nginx_version }}"
+            }
+
+      - name: 🍎 macOS NGINX Build Trigger - ${{ env.nginx_version }}
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          repository: inckmolabs/ci-bot
+          event-type: nginx-release
+          client-payload: |
+            {
+              "target_os": "macos",
+              "nginx_version": "${{ env.nginx_version }}"
+            }
