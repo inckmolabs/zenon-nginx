@@ -3,14 +3,36 @@ name: Trigger NGINX Build
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      nginx_version:
+        description: "Optional: NGINX version to build (leave empty to use latest)"
+        required: false
 
 jobs:
   trigger-build:
-    name: Trigger NGINX Build in ci-bot
+    name: 🚀 Trigger NGINX Build in ci-bot
     runs-on: ubuntu-latest
 
     steps:
-      - name: Trigger NGINX Build
+      - name: 📥 Determine NGINX Version
+        id: get-version
+        run: |
+          echo "🔍 Checking provided version from workflow_dispatch or release trigger..."
+          VERSION_INPUT="${{ github.event.inputs.nginx_version }}"
+          echo "📥 Provided version: '${VERSION_INPUT}'"
+
+          if [ -z "$VERSION_INPUT" ]; then
+            echo "📡 No version specified. Fetching latest NGINX release from GitHub..."
+            latest=$(curl -s https://api.github.com/repos/nginx/nginx/releases/latest | jq -r '.tag_name')
+            echo "✅ Using latest version: $latest"
+            echo "nginx_version=$latest" >> "$GITHUB_ENV"
+          else
+            echo "✅ Using provided version: $VERSION_INPUT"
+            echo "nginx_version=$VERSION_INPUT" >> "$GITHUB_ENV"
+          fi
+
+      - name: 🪟 Trigger Windows NGINX Build - Version ${{ env.nginx_version }}
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
@@ -18,5 +40,18 @@ jobs:
           event-type: nginx-release
           client-payload: |
             {
-              "version": "nginx-1.27.2"
+              "target_os": "windows",
+              "nginx_version": "${{ env.nginx_version }}"
+            }
+
+      - name: 🍎 Trigger macOS NGINX Build - Version ${{ env.nginx_version }}
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          repository: inckmolabs/ci-bot
+          event-type: nginx-release
+          client-payload: |
+            {
+              "target_os": "macos",
+              "nginx_version": "${{ env.nginx_version }}"
             }
