@@ -27,6 +27,7 @@ jobs:
           else
             echo "✅ Using provided version: $VERSION_INPUT"
             echo "nginx_version=$VERSION_INPUT" >> "$GITHUB_ENV"
+          fi
 
       - name: 🪟 Windows NGINX Build Trigger - ${{ env.nginx_version }}
         uses: peter-evans/repository-dispatch@v3
