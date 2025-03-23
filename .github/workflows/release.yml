@@ -1,53 +1,47 @@
-name: 🚀 Trigger NGINX Build
+name: 🚀 Zenon NGINX Release Dispatcher
 
 on:
   workflow_dispatch:
     inputs:
       nginx_version:
-        description: "Optional: NGINX version (leave empty to use latest)"
+        description: "Optional: NGINX version (leave blank for latest)"
         required: false
 
+  release:
+    types: [published]
+
 jobs:
-  trigger:
+  prepare-and-dispatch:
     name: 📦 Prepare and Dispatch Build
     runs-on: ubuntu-latest
 
     steps:
-      - name: 🔍 Determine NGINX Version
-        id: set_version
+      - name: 🧾 Show Input Info
+        run: |
+          echo "🔧 Input Version: ${{ github.event.inputs.nginx_version || 'latest' }}"
+
+      - name: 📥 Set or Fetch Latest NGINX Version
+        id: set-version
         run: |
           VERSION="${{ github.event.inputs.nginx_version }}"
-          echo "📥 Provided version: '${VERSION}'"
           if [ -z "$VERSION" ]; then
-            echo "📡 No version specified. Fetching latest NGINX release from GitHub..."
-            latest=$(curl -s https://api.github.com/repos/nginx/nginx/releases/latest | jq -r '.tag_name')
-            echo "✅ Using latest version: $latest"
-            echo "nginx_version=$latest" >> "$GITHUB_ENV"
-            echo "::set-output name=nginx_version::$latest"
-          else
-            echo "✅ Using provided version: $VERSION"
-            echo "nginx_version=$VERSION" >> "$GITHUB_ENV"
-            echo "::set-output name=nginx_version::$VERSION"
+            VERSION=$(gh release view nginx --repo nginx/nginx --json tagName -q .tagName)
           fi
+          echo "nginx_version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: 📢 Announce Target Platforms
-        run: |
-          echo "🔧 NGINX Version to build: ${{ steps.set_version.outputs.nginx_version }}"
-          echo "🪟 Windows build will be triggered"
-          echo "🍎 macOS build will be triggered"
-
-      - name: 🚀 Dispatch Build to ci-bot
+      - name: 🚀 Dispatch Multi-Platform Build
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
           repository: inckmolabs/ci-bot
-          event-type: nginx-release
+          event-type: build-nginx
           client-payload: |
             {
-              "nginx_version": "${{ steps.set_version.outputs.nginx_version }}"
+              "nginx_version": "${{ steps.set-version.outputs.nginx_version }}"
             }
 
-      - name: ⏳ Done! Waiting for Build Completion...
+      - name: 📋 Summary
         run: |
-          echo "🎯 Build job dispatched to ci-bot repository!"
-          echo "📦 Targets: Windows (MSVC), macOS (Clang)"
+          echo "### Build Triggered 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: ${{ steps.set-version.outputs.nginx_version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Platforms: Windows & macOS" >> $GITHUB_STEP_SUMMARY
