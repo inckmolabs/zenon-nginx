@@ -11,7 +11,19 @@ jobs:
   trigger:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger NGINX Build
+      - name: Determine NGINX Version
+        id: get_version
+        run: |
+          if [[ -z "${{ github.event.inputs.nginx_version }}" ]]; then
+            echo "No version provided, fetching latest release..."
+            version=$(curl -s https://api.github.com/repos/nginx/nginx/releases/latest | jq -r '.tag_name')
+          else
+            version="${{ github.event.inputs.nginx_version }}"
+          fi
+          echo "NGINX_VERSION=$version" >> "$GITHUB_ENV"
+          echo "::set-output name=version::$version"
+
+      - name: Trigger Build for Windows
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
@@ -19,5 +31,18 @@ jobs:
           event-type: nginx-release
           client-payload: |
             {
-              "nginx_version": "${{ github.event.inputs.nginx_version }}"
+              "target_os": "windows",
+              "nginx_version": "${{ steps.get_version.outputs.version }}"
+            }
+
+      - name: Trigger Build for macOS
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          repository: inckmolabs/ci-bot
+          event-type: nginx-release
+          client-payload: |
+            {
+              "target_os": "macos",
+              "nginx_version": "${{ steps.get_version.outputs.version }}"
             }
