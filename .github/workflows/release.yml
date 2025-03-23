@@ -23,7 +23,7 @@ jobs:
           echo "✅ Selected NGINX version: $VERSION"
           echo "nginx_version=$VERSION" >> $GITHUB_ENV
 
-      - name: 📤 Dispatch Build Workflow (ci-bot)
+      - name: 📤 Dispatch Build
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.REPO_ACCESS_TOKEN }}
@@ -34,5 +34,5 @@ jobs:
               "nginx_version": "${{ env.nginx_version }}"
             }
 
-      - name: ✅ Done NginX ${{ env.nginx_version }}
+      - name: ✅ Nginx-${{ env.nginx_version }}
         run: echo "🔔 Build workflow triggered with version ${{ env.nginx_version }}"
