@@ -26,7 +26,7 @@ jobs:
       - name: 📤 Dispatch Build Workflow (ci-bot)
         uses: peter-evans/repository-dispatch@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
           repository: inckmolabs/ci-bot
           event-type: build-nginx
           client-payload: |
