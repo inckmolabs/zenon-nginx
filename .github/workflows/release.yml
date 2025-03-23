@@ -24,7 +24,8 @@ jobs:
           echo "nginx_version=$VERSION" >> $GITHUB_ENV
 
       - name: 🔍 Processing NGINX Version
-        run: echo "🚀 Processing NGINX build for version: ${{ env.nginx_version }}"
+        run: |
+          echo "🚀 Processing NGINX build for version: ${{ env.nginx_version }}"
 
       - name: 📤 Dispatch Build Workflow (ci-bot)
         uses: peter-evans/repository-dispatch@v3
