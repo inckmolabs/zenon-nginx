@@ -1,47 +1,38 @@
-name: 🚀 Zenon NGINX Release Dispatcher
+name: 🔔 Trigger NGINX Build
 
 on:
   workflow_dispatch:
     inputs:
       nginx_version:
-        description: "Optional: NGINX version (leave blank for latest)"
+        description: "NGINX Version (leave empty for latest release)"
         required: false
 
-  release:
-    types: [published]
-
 jobs:
-  prepare-and-dispatch:
-    name: 📦 Prepare and Dispatch Build
+  trigger-build:
+    name: 🔗 Trigger Build Workflow
     runs-on: ubuntu-latest
-
     steps:
-      - name: 🧾 Show Input Info
-        run: |
-          echo "🔧 Input Version: ${{ github.event.inputs.nginx_version || 'latest' }}"
-
-      - name: 📥 Set or Fetch Latest NGINX Version
-        id: set-version
+      - name: 📦 Determine NGINX Version
+        id: get-version
         run: |
           VERSION="${{ github.event.inputs.nginx_version }}"
-          if [ -z "$VERSION" ]; then
-            VERSION=$(gh release view nginx --repo nginx/nginx --json tagName -q .tagName)
+          if [ -z "$VERSION" ] || [ "$VERSION" = "latest" ]; then
+            echo "Fetching latest release from GitHub (via curl + jq)..."
+            VERSION=$(curl -s https://api.github.com/repos/nginx/nginx/releases/latest | jq -r .tag_name)
           fi
-          echo "nginx_version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "✅ Selected NGINX version: $VERSION"
+          echo "nginx_version=$VERSION" >> $GITHUB_ENV
 
-      - name: 🚀 Dispatch Multi-Platform Build
+      - name: 📤 Dispatch Build Workflow (ci-bot)
         uses: peter-evans/repository-dispatch@v3
         with:
-          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           repository: inckmolabs/ci-bot
           event-type: build-nginx
           client-payload: |
             {
-              "nginx_version": "${{ steps.set-version.outputs.nginx_version }}"
+              "nginx_version": "${{ env.nginx_version }}"
             }
 
-      - name: 📋 Summary
-        run: |
-          echo "### Build Triggered 🚀" >> $GITHUB_STEP_SUMMARY
-          echo "- Version: ${{ steps.set-version.outputs.nginx_version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Platforms: Windows & macOS" >> $GITHUB_STEP_SUMMARY
+      - name: ✅ Done
+        run: echo "🔔 Build workflow triggered with version ${{ env.nginx_version }}"
