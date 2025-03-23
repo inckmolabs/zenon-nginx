@@ -1,4 +1,4 @@
-name: 🔔 Trigger NGINX Build
+name: 🔔 Zenon NGINX Build
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   trigger-build:
-    name: 🔗 Trigger Build Workflow
+    name: 🔗 Nginx Build Job
     runs-on: ubuntu-latest
     steps:
       - name: 📦 Determine NGINX Version
@@ -34,5 +34,5 @@ jobs:
               "nginx_version": "${{ env.nginx_version }}"
             }
 
-      - name: ✅ Done
+      - name: ✅ Done NginX ${{ env.nginx_version }}
         run: echo "🔔 Build workflow triggered with version ${{ env.nginx_version }}"
